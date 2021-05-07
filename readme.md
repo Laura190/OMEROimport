@@ -28,7 +28,7 @@ Data older than 31 days is moved to a folder called OldData. This makes it easy 
     ```
 5. Clone the repo
 6. Create a configuration file that contains:
-7. ```
+    ```
     server=server.name
     port=xxxx
     username=importer_name
