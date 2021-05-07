@@ -1,13 +1,20 @@
 #!/bin/bash
 
 ##Import for individual Windows computer
-# Parameters
+# Parameters:
+# Name of microscope
 micro=laura
+# Location where data is stored
 path=/mnt/d/Data
+# Location of Imported folder
 imp_path=$path/Imported
+# Location where log files will be stored
 archive=$path/ImportLogs
+# Location of password file
 pass_file=/home/user/.pass.txt
+# Path to OMERO environment
 env=/home/user/omero-env
+# Path to configuration file
 conf_file=/home/user/import.cfg
 
 #Moves old data
