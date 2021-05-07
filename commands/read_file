@@ -1,0 +1,72 @@
+#!/bin/bash
+
+## Define read_file command
+
+function read_file::description(){
+  echo "Reads string from file"
+}
+
+function read_file::usage() {
+  cat <<EOT
+  -f --file   mandatory   Path to file to be read
+EOT
+}
+
+function read_file::run () {
+ # Check if file is given
+ local file_path=$(readopt -f --file)
+ if [ -z "${file_path}" ]; then
+   echo "ERROR: read_file - no file given with --file"
+   exit 1
+ fi
+ 
+ ## Define variables
+ 
+ local file=$(get_file "$file_path")
+ check_error $file
+
+ local result=$(read_file "$file")
+ check_error $result
+  
+ # Print contents of file if successful
+ echo "$result"
+}
+
+# ===================================================================================
+
+## Define functions
+
+# Check given password file is a file
+get_file() {
+  local file=${1}
+  if [ -f "$file" ]; then
+    echo $file
+  else
+    echo "ERROR: $file does not exist"
+    exit 1
+  fi
+}
+
+# Read password from password file
+read_file() {
+  local str=$(cat "${1}")
+  # Check if string is empty
+  if [ -z "${str}" ]; then
+   echo "ERROR: $file is empty"
+   exit 1
+  else
+    echo $str
+  fi
+}
+
+# Check for errors - all error messages start with ERROR:
+# If doing multiple levels of functions, send to error file and then parse file at end
+check_error() {
+  local msg="$*"
+  # regex matching at beginning of a string. If removing ERROR from the beginning
+  # causes msg varibale to change then return as error
+  if [ "${msg//ERROR/}" != "${msg}" ]; then
+    echo "${msg}"
+    exit 1
+  fi
+}

@@ -1,0 +1,96 @@
+#!/bin/bash
+
+## Define read_file command
+
+function read_config::description(){
+  echo "Reads parameters from config file"
+}
+
+function read_config::usage() {
+  cat <<EOT
+  -f --file   mandatory   path to config file
+EOT
+}
+
+function read_config::run () {
+ # Check if file is given
+ local file_path=$(readopt -f --file)
+ if [ -z "${file_path}" ]; then
+   echo "ERROR: read_config - no file given with --file. Have you use the correct format? e.g. --file=file.name"
+   exit 1
+ fi
+ 
+ ## Define variables
+ 
+ local file=$(get_file "$file_path")
+ check_error $file
+
+ local server port username
+ {
+  read -r server
+  read -r port
+  read -r username
+ } <<< "$( source_file "$file" )"
+ echo "$server"
+ echo "$port"
+ echo "$username"
+}
+
+# ===================================================================================
+
+## Define functions
+
+# Check given password file is a file
+get_file() {
+  local file=${1}
+  if [ -f "$file" ]; then
+    echo $file
+  else
+    echo "ERROR: $file does not exist"
+    exit 1
+  fi
+}
+
+# Read password from password file
+source_file() {
+  local configfile="${1}"
+  local configfile_secured='tmp.cfg'
+  local server port username
+
+  # check if the file contains something we don't want
+  if egrep -q -v '^#|^[^ ]*=[^;]*' "$configfile"; then
+    echo "Config file is unclean, cleaning it..." >&2
+    # filter the original to a new file
+    egrep '^#|^[^ ]*=[^;&]*'  "$configfile" > "$configfile_secured"
+    configfile="$configfile_secured"
+  fi
+
+  # now source it, either the original or the filtered variant
+  source "$configfile"
+
+  # Check if parameters are empty
+  if [[ "${server:-nope}" == "nope" ]]; then
+   server="ERROR: server undefined in the config file"
+  fi
+  if [[ "${port:-nope}" == "nope" ]]; then 
+   port="ERROR: port undefined in the config file"
+  fi
+  if [[ "${username:-nope}" == "nope" ]]; then
+   username="ERROR: username undefined in the config file"
+  fi
+    echo ${server}
+    echo ${port}
+    echo ${username}
+}
+
+# Check for errors - all error messages start with ERROR:
+# If doing multiple levels of functions, send to error file and then parse file at end
+check_error() {
+  local msg="$*"
+  # regex matching at beginning of a string. If removing ERROR from the beginning
+  # causes msg varibale to change then return as error
+  if [ "${msg//ERROR/}" != "${msg}" ]; then
+    echo "${msg}"
+    exit 1
+  fi
+}

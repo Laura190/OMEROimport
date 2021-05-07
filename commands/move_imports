@@ -1,0 +1,206 @@
+#!/bin/bash
+
+## Define move_imports command
+
+function move_imports::description(){
+  cat <<EOT
+Moves the files that are reported as imports
+in the log file
+EOT
+}
+
+function move_imports::usage() {
+  cat <<EOT
+  -l --logfile   mandatory   Path to log file (user_imported.log)
+  -t --target    mandatory   Path to target folder
+EOT
+}
+
+function move_imports::run () {
+ # Check if logfile is given
+ local lg=$(readopt -l --logfile)
+ if [ -z "${lg}" ]; then
+   echo "ERROR: move_imports - no log file given with --logfile"
+   exit 1
+ fi
+ 
+ # Check if logfile is given
+ local tar=$(readopt -t --target)
+ if [ -z "${tar}" ]; then
+   echo "ERROR: move_imports - no target directory given with --target"
+   exit 1
+ fi
+ 
+ ## Define variables
+ local img_log=$(get_log "$lg")
+ check_error $img_log
+ 
+  # get user ID
+ local user=$(get_user $img_log)
+ check_error $user
+ 
+ local target=$(get_target "$tar")
+ check_error $target
+ 
+ local grp_file=$(get_grp_file "$img_log")
+ check_error $grp_file
+ 
+ local summary=$(get_summary "$img_log")
+ check_error $summary
+ echo $summary
+
+ local images=$(get_imported_images "$img_log")
+ check_error $images
+ 
+ local files=$(get_imported_files "$grp_file" "$summary" "$images")
+ check_error $files
+
+ local result=$(move_imports "$target")
+ check_error $result
+ 
+ #Print warnings
+ local errors=$(check_omero_errors "$summary" "$user")
+ echo $errors
+ 
+ # Print message if successful
+ echo "=== Successfully moved imported files"
+}
+
+# ===================================================================================
+
+## Define functions
+get_log() {
+  local log=$(check_file ${1})
+  echo $log
+}
+
+get_user(){
+  local user=$(echo ${1} | cut -d '_' -f 1)
+  if [ -z "$user" ]; then
+    echo "ERROR: No user identified, does log file name contain the user ID?"
+    exit 1
+  else
+    echo $user
+  fi
+}
+
+get_target() {
+  local tar=${1}
+  if [[ $tar != /data1/* ]]; then
+    #Check if directory if its not a DV microscope
+    local target=$(check_dir $tar)
+  else
+    local target=$tar
+  fi
+  echo $target
+}
+
+# Create list of old data
+get_grp_file() {
+  local log=${1}
+  local dname=$(dirname $log)
+  local bname=$(basename $log)
+  local glog=${dname}/Before_${bname}
+  grp_log=$(check_file ${glog})
+  echo $grp_log
+}
+
+get_summary() {
+  local log_file=${1}
+  local summary=$(grep -A 1 'Summary' $log_file | tail -1)
+  if [ -z "$summary" ]; then
+    echo "ERROR: No Summary found in $log_file. Did the import complete properly?"
+    exit 1
+  else
+    echo $summary
+  fi
+}
+
+get_imported_images() {
+  local log_file=${1}
+  # List of imported image files
+  images=$(grep -o 'IMPORT_DONE Imported file:.*' $log_file | cut -f 4 -d ' ')
+  echo $images
+}
+
+# Get files associated to imported image files and save to temp file
+get_imported_files(){
+  local grp_file=${1}
+  local images=${3}
+  # If it exists remove importsFiles so do not append to already existing file
+  rm -f importedFiles.list 2> /tmp/om_imp
+  # Parse group log file to get all associated/additional files
+  local end=$(grep "#===" $grp_file | head -1)
+  local start
+  local escaped_start
+  for img in $images; do
+    start=$(grep "# Group: $img" $grp_file | head -1)
+    escaped_start=$(printf '%s\n' "$start" | sed -e 's/[\/&]/\\&/g')
+	#Read all the lines between, and including, escaped_start and end; then delete first and last lines
+    sed -n "/${escaped_start}/,/${end}/ p" $grp_file | sed '1d' | sed '$d' >> importedFiles.list
+  done
+}
+
+# Move imports data to imported folder
+move_imports() {
+  local target=${1}
+  # Get directory of data/imported folder
+  local path=$(dirname $target)
+  # Get name of imported folder
+  local word=/$(basename $target)
+  while read filename; do 
+    newFilename=$(sed "s@$path@&$word@g" <<< "$filename")
+    mkdir --parents $(dirname "$newFilename")
+    if [ $? -ne 0 ]; then
+      echo "ERROR: unable to create folder for $newFilename"
+      exit 1
+    fi
+    mv "$filename" "$newFilename"
+    if [ $? -ne 0 ]; then
+      echo "ERROR: unable to move $filename to $newFilename"
+      exit 1
+    fi
+  done < importedFiles.list
+  echo "Successfully moved imported data"
+  rm importedFiles.list 2> /tmp/om_imp
+}
+
+# Check directory exists
+check_dir() {
+  local dir=${1}
+  if [ -d "$dir" ]; then
+    echo "$dir"
+  else
+    echo "ERROR: "$dir" directory does not exist"
+    exit 1
+  fi
+}
+
+# Check file exists
+check_file() {
+  local file=${1}
+  if [ -f "$file" ]; then
+    echo "$file"
+  else
+    echo "ERROR: "$file" file does not exist"
+    exit 1
+  fi
+}
+
+check_omero_errors() {
+  local errors=$(echo "${1}" | cut -d ' ' -f 10)
+  local user=${2}
+  echo "Warning: OMERO reported $errors errors occured when importing files for $user"
+}
+
+# Check for errors - all error messages start with ERROR:
+# If doing multiple levels of functions, send to error file and then parse file at end
+check_error() {
+  local msg="$*"
+  # regex matching at beginning of a string. If removing ERROR from the beginning
+  # causes msg varibale to change then return as error
+  if [ "${msg//ERROR/}" != "${msg}" ]; then
+    echo "${msg}"
+    exit 1
+  fi
+}

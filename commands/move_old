@@ -1,0 +1,155 @@
+#!/bin/bash
+
+## Define move_old command
+
+function move_old::description(){
+  echo "Moves data older than 31 days to an OldData folder"
+}
+
+function move_old::usage() {
+  cat <<EOT
+  -l --location   mandatory   Full path to data folder
+  -r --dryrun     optional    If set to 1, creates lists of files to move, but does not move them. If left empty, will move
+  -d --disk       DVs only    The user drive on the DV microscope
+EOT
+}
+
+function move_old::run () {
+ # Check if location is given
+ local loc=$(readopt -l --location)
+ if [ -z "${loc}" ]; then
+   echo "ERROR: move_old - no data folder given with --location"
+   exit 1
+ fi
+
+ #Check if dryrun is given
+ local dry=$(readopt -r --dryrun)
+
+ #Get disk if given
+ local disk=$(readopt -d --disk)
+
+ ## Define variables
+ local path=$(get_path "$loc")
+ check_error $path
+
+ local list_file=$(list_old_data "$path")
+ check_error $list_file
+
+ if [ -z "${dry}" ]; then
+   if [[ "$path" == *DV* ]]; then
+     local result=$(move_DV_olddata "$path" "$disk")
+   else
+     local result=$(move_old_data "$path")
+   fi
+   check_error $result
+   echo "=== $result"
+ else
+   echo "$list_file"
+ fi
+}
+
+# ===================================================================================
+
+## Define functions
+get_path() {
+  local data_dir=$(check_dir ${1})
+  echo $data_dir
+}
+
+# Create list of old data
+list_old_data() {
+  local path=${1}
+  #find data older than a month
+  find "$path" -mtime +31 -type f -exec ls "{}" \; > OldData.list
+  if [ $? -ne 0 ]; then
+    echo "ERROR: unable to create OldData.list"
+    exit 1
+  fi
+  #remove .username.txt files from list
+  sed -i -n '/.username.txt/!p' OldData.list
+  #remove files already in OldData folder from list
+  sed -i -n '/OldData/!p' OldData.list
+  #remove files in Imported folder from list
+  sed -i -n '/Imported/!p' OldData.list
+  echo OldData.list
+}
+
+# Move old data to OldData folder
+move_old_data() {
+  local path=${1}
+  word="/OldData"
+  if [ -s "OldData.list" ]; then
+    while read filename; do
+      newFilename=$(sed "s@$path@&$word@g" <<< "$filename")
+      mkdir --parents "$(dirname "$newFilename")"
+      if [ $? -ne 0 ]; then
+        echo "ERROR: unable to create OldData folder"
+        exit 1
+      fi
+      mv "$filename" "$newFilename"
+      if [ $? -ne 0 ]; then
+        echo "ERROR: unable to move $filename to $newFilename"
+        exit 1
+      fi
+    done < OldData.list
+    echo "Successfully moved old data"
+  else
+    echo "No old data to move"
+  fi
+  # Remove old data list
+  rm OldData.list
+}
+
+move_DV_olddata() {
+  local path=${1}
+  local old="/data1/"${2}""
+  local new="/data1/OldData/"${2}""
+  source commands/mount_micro
+  local micro=$(basename "$path")
+  local IP=$(get_detail $micro IP microscope.yaml)
+  local ssh_key=/home/camdu/.ssh/id_rsa_$micro
+  while read filename; do
+    # Replace current path name to name on remote microscope computer
+    oldFilename=$(sed "s@$path@$old@g" <<< "$filename")
+    # Replace current path name to name of OldData folder on remote microscope computer
+    newFilename=$(sed "s@$path@$new@g" <<< "$filename")
+    # Send command to remote microscope computer to move files
+    # Need to point to specific ssh key to prevent request for password
+    printf -v makeStr 'mkdir --parents %q' "$(dirname "$newFilename")"
+    printf -v moveStr1 'mv %q %q/' "$oldFilename" "$(dirname "$newFilename")"
+    # -n needed to prevent ssh breaking while loop
+    ssh -n camdu@$IP -i $ssh_key $makeStr
+    if [ $? -ne 0 ]; then
+      echo "ERROR: unable to create folder for $newFilename"
+      exit 1
+    fi
+    ssh -n camdu@$IP -i $ssh_key $moveStr1
+    if [ $? -ne 0 ]; then
+      echo "ERROR: unable to move $oldFilename to $newFilename"
+      exit 1
+    fi
+  done < OldData.list
+}
+
+# Check directory exists
+check_dir() {
+  local dir=${1}
+  if [ -d $dir ]; then
+    echo $dir
+  else
+    echo "ERROR: $dir directory does not exist"
+    exit 1
+  fi
+}
+
+# Check for errors - all error messages start with ERROR:
+# If doing multiple levels of functions, send to error file and then parse file at end
+check_error() {
+  local msg="$*"
+  # regex matching at beginning of a string. If removing ERROR from the beginning
+  # causes msg varibale to change then return as error
+  if [ "${msg//ERROR/}" != "${msg}" ]; then
+    echo "${msg}"
+    exit 1
+  fi
+}
