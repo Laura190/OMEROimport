@@ -1,0 +1,187 @@
+#!/bin/bash
+
+# Based on code from https://www.youtube.com/watch?v=1mt2-LbKuvY
+
+# Set options:
+
+# Fail on a single failed command in a pipeline
+set -o pipefail
+
+# Save global script arguments
+if [ -z "$1" ]; then
+  ARGS=("--help")
+else
+  ARGS=("$@")
+fi
+
+# Fail on error and undefined variables
+set -eu
+
+# Checks if a flag is present in the arguments
+hasflag() {
+  # if no argument expand to empty string
+  # local flag=${1:-}
+  # get all arguments, arguments are mandatory, multiple arguments allowed
+  local flags="$@"
+  for var in "${ARGS[@]}"; do
+    for flag in $flags; do
+      if [ "$var" = "$flag" ]; then
+        echo 'true'
+        return
+      fi
+    done
+  done
+  echo 'false'
+}
+
+# Read value of an option
+readopt() {
+  local opts="$@"
+  for var in "${ARGS[@]}"; do
+    for opt in $opts; do
+      # if var starts with an option
+      if [[ "$var" = ${opt}* ]]; then
+        # replace the part after the option with an empty string
+        # e.g. if the argument $var='hello=world' and the option $opt='hello', 
+        # $value would be 'world'
+        local value="${var//${opt}=/}"
+        if [ "$value" != "$var" ]; then
+          # Value could be extracted
+          echo $value
+          return
+        fi
+      fi
+    done
+  done
+  # Nothing found
+  echo ""
+}
+
+# Directory where this script is located
+basedir() {
+  # Default is current directory
+  local script=${BASH_SOURCE[0]}
+  
+  # Resolve symbolic links, feature probing: try some methods and use whatever works
+  if [ -L $script ]; then
+    if readlink -f $script >/dev/null 2>&1; then
+      script=$(readlink -f $script)
+    elif readlink $script >/dev/null 2>&1; then
+      script=$(readlink $script)
+    elif realpath $script >/dev/null 2>&1; then
+      script=$(realpath $script)
+    else
+      echo "ERROR: Cannot resolve symbolic link $script"
+      exit 1
+    fi
+  fi
+  
+  # Print the full path
+  local dir=$(dirname "$script")
+  local full_dir=$(cd "${dir}" && pwd)
+  echo ${full_dir}
+}
+
+# Run a command
+run() {
+  local first_arg=${1:-}
+  local cmd_dir="$(basedir)/commands"
+  local command
+  # Check if first argument is a command, it does not start with minus
+  if [ -n "${first_arg}" ] && [[ ${first_arg} != -* ]]; then
+    command="$first_arg"
+    # Check if the command file exists
+    if [ ! -f "$cmd_dir/$command" ]; then
+      echo
+      echo ">>>> Unknown command '$command'"
+      echo
+      display_help
+      exit 1
+    fi
+  fi
+  
+  # Check for help command
+  if [ "${command:-}" == "help" ] || $(hasflag --help -h); then
+    display_help ${command:-}
+    exit 0
+  fi
+  
+  source "$cmd_dir/$command"
+
+  eval "${command}::run"
+  
+}
+
+display_help() {
+  local command=${1:-}
+  local cmd_dir=$(basedir)/commands
+  # If you don't provide a command, list all commands
+  if [ -z "${command}" ]; then
+      cat << EOT
+Usage: OMEROimport <command> <options>
+
+Tools for importing data to OMERO for different users, drives and computers
+
+Used with OMEROAutoimport and cron/task manager to set up regular automatic importing of images to OMERO
+
+Commands:
+EOT
+    for cmd in $(ls $cmd_dir); do
+      if [ -f $cmd_dir/$cmd ]; then
+        source $cmd_dir/$cmd
+        ln=$( "$cmd::description" | wc -l)
+        if [ $ln -gt 1 ]
+        then
+          count=0
+          while read line
+          do
+          	if [ $count == 0 ]
+          	then
+          	  printf "   %-15s  %s\n" $cmd "$line"
+          	  count=1
+          	else
+        	  printf "                    %s\n" "$line"
+        	fi
+          done <<< "$($cmd::description)"
+        else
+        printf "   %-15s  %s\n" $cmd "$($cmd::description)"
+        fi
+        printf "  \n" $cmd "$($cmd::description)"
+      fi
+    done
+    printf "   %-15s  %s\n" "help" "Print this help message"
+  # If you provide a command, show help for that command
+  else
+    source $cmd_dir/$command
+    cat << EOT
+$($command::description)
+EOT
+
+ cat << EOT
+ 
+Usage: OMEROimport $command [... options ...]
+
+EOT
+    echo "Options for $command:"
+    echo -e "$($command::usage)"
+  fi
+}
+
+# Put all code executed in the main part of the script here
+run_main() {
+  run "$ARGS"
+}
+
+# This enables script to be tested by sourcing it and testing the individual functions.
+#More details: https://opensource.com/article/19/2/testing-bash-bats
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  run_main
+fi
+
+# ===========================================================
+
+if $(hasflag --verbose -v); then
+  export PS4='+($(basename ${BASH_SOURCE[0]}):${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+  set -x
+fi
