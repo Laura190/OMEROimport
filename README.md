@@ -39,9 +39,8 @@ Data older than 31 days is moved to a folder called OldData. This makes it easy 
    See Example/import.cfg for an example configuration file.
 7. Create a password file containing the password for your importer
 
-For summary of commands run
-
-$ bash OMEROimport --help
+For summary of commands run \
+`bash OMEROimport --help`
 
 ## Setting up for automatic imports
 An example use of how the commands can be used to set up an automatic import can be found in Example/MicroscopeImport.sh. There are six parameters at the start that should be set for the computer running the import. This is an example of how the commands can be run together, as suits our purposes. You should edit the sequence to fit your requirements
