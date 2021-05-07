@@ -28,9 +28,11 @@ Data older than 31 days is moved to a folder called OldData. This makes it easy 
     ```
 5. Clone the repo
 6. Create a configuration file that contains:
+7. ```
     server=server.name
     port=xxxx
     username=importer_name
+    ```
    See Example/import.cfg for an example configuration file.
 7. Create a password file containing the password for your importer
 
@@ -43,7 +45,7 @@ An example use of how the commands can be used to set up an automatic import can
 
 1. Add a file to the folder to be imported. This file must be called .username.txt and contain the OMERO username for the person who's data is being imported.
 2. Make sure that the Windows user which will be running the automatic import has approriate permissions on all the required folders.
-3. Create a .bat file to run the import, the contents should look something like this:
+3. Create a .bat file to run the import, the contents should look something like this: \
    `wsl cd /home/user/Autoimport; bash MicroscopeImport.sh > task.log`
 4. Use Task schedular to set up when .bat file should run
 
