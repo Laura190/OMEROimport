@@ -1,6 +1,6 @@
 # OMEROimport
 
-Author: Laura Cooper, CAMDU, University of Warwick
+Author: Laura Cooper, CAMDU, University of Warwick \
 Contact: CAMDU@warwick.ac.uk
 
 ## Description
