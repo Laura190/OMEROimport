@@ -151,17 +151,13 @@ move_imports() {
   while read filename; do 
     newFilename=$(sed "s@$path@&$word@g" <<< "$filename")
     mkdir --parents $(dirname "$newFilename")
-    if [ $? -ne 0 ]; then
-      echo "ERROR: unable to create folder for $newFilename"
-      exit 1
-    fi
     mv "$filename" "$newFilename"
-    if [ $? -ne 0 ]; then
-      echo "ERROR: unable to move $filename to $newFilename"
-      exit 1
+    local error_code=$?
+    if [ $error_code -ne 0 ]; then
+      echo "ERROR: unable to move $filename to $newFilename. mv error code $error_code.\n"
     fi
   done < importedFiles.list
-  echo "Successfully moved imported data"
+  echo "=== Moved imported data"
   rm importedFiles.list 2> /tmp/om_imp
 }
 
