@@ -119,7 +119,7 @@ get_summary() {
 get_imported_images() {
   local log_file=${1}
   # List of imported image files
-  images=$(grep -o 'IMPORT_DONE Imported file:.*' $log_file | cut -f 4 -d ' ')
+  images=$(grep -o 'IMPORT_DONE Imported file:.*' $log_file | cut -f 4- -d ' ')
   echo $images
 }
 
@@ -150,18 +150,16 @@ move_imports() {
   local word=/$(basename $target)
   while read filename; do 
     newFilename=$(sed "s@$path@&$word@g" <<< "$filename")
-    mkdir --parents $(dirname "$newFilename")
+    mkdir --parents "$(dirname "$newFilename")"
     if [ $? -ne 0 ]; then
       echo "ERROR: unable to create folder for $newFilename"
-      exit 1
     fi
     mv "$filename" "$newFilename"
     if [ $? -ne 0 ]; then
       echo "ERROR: unable to move $filename to $newFilename"
-      exit 1
     fi
   done < importedFiles.list
-  echo "Successfully moved imported data"
+  echo "Finished moving imported data"
   rm importedFiles.list 2> /tmp/om_imp
 }
 
