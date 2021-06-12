@@ -198,16 +198,11 @@ touch -- "$logname".log
     $environment/bin/omero import "$folder" -T "regex:+name:^.*$folder_name/(?<Container1>.*?)" \
     -u "$user" --sudo $importer -s $server -p $port -w "$password" --skip upgrade --depth 7\
     &> "$logname".log
-
-    if [ $? -eq 0 ]; then
-      echo "$logname".log
-    else
-      echo "ERROR: Import did not finish for $user, please check "$user".log\n"
-      exit 1
-    fi
-	$environment/bin/omero logout
+    echo "$logname".log
+    $environment/bin/omero logout
   else
     echo "=== No files to import for $user\n"
+    rm Before_"$logname".log
   fi
 }
 
