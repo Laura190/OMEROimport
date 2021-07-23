@@ -7,7 +7,7 @@ Contact: CAMDU@warwick.ac.uk
 A series of commands that can be combined to set up automatic imports from microscopes. The commands are designed to output concise messages so it is easy to quickly spot issues. Verbose output is passed to a log file that can be accessed when more details are required.
 Data older than 31 days is moved to a folder called OldData. This makes it easy to monitor data/files that have been on the microscope computer for a long time to prevent the hard drive becoming full. Data that is imported to OMERO is moved to an Imported folder so that users can check their data has been correctly stored in OMERO before deleting it from the microscope computer.
 
-You can see a short video describing the import made for OME 2021 conference here: https://www.youtube.com/watch?v=nz-WOUj8tc4
+You can see a short video describing the import made for OME 2021 here: https://www.youtube.com/watch?v=nz-WOUj8tc4
 
 ## OMERO requirements
 - A user with sudo and create users privileges to act as the importer
