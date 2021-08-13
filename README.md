@@ -29,6 +29,7 @@ You can see a short video describing the import made for OME 2021 here: https://
     sudo apt-get install -y openjdk-11-jre
     python3 -m venv omero-env
     source ./omero-env/bin/activate
+    pip3 install wheel
     pip3 install omero-py>=5.8.1
     ```
 5. Clone the repo
