@@ -27,6 +27,7 @@ Data older than 31 days is moved to a folder called OldData. This makes it easy 
     sudo apt-get install -y openjdk-11-jre
     python3 -m venv omero-env
     source ./omero-env/bin/activate
+    pip3 install wheel
     pip3 install omero-py>=5.8.1
     ```
 5. Clone the repo
