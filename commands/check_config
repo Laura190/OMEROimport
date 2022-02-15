@@ -13,11 +13,14 @@ EOT
 }
 
 function check_config::run () {
- # Check if file is given or use default
- local file_path=$(readopt -f --file) || file_path="import.cfg"
+ # Check if file is given else use default
+ local file_path=$(readopt -f --file)
+ if [ -z "${file_path}" ]; then
+   local file_path="import.cfg"
+ fi
 
  ## Define variables
-
+ 
  local file=$(get_file "$file_path")
  check_error $file
  declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "username")
