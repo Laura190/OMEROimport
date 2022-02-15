@@ -1,0 +1,93 @@
+#!/bin/bash
+
+## Define read_file command
+
+function check_config::description(){
+  echo "Check config file to remove extraneous statements and identify any missing values. Returns name of cleaned config file"
+}
+
+function check_config::usage() {
+  cat <<EOT
+  -f --file   optional   path to config file
+EOT
+}
+
+function check_config::run () {
+ # Check if file is given or use default
+ local file_path=$(readopt -f --file) || file_path="import.cfg"
+
+ ## Define variables
+
+ local file=$(get_file "$file_path")
+ check_error $file
+ declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "username")
+ for i in ${list[@]}; do local $i; done
+ {
+  read -r micro
+  read -r path
+  read -r imp_path
+  read -r archive
+  read -r pass_file
+  read -r enviro
+  read -r server
+  read -r port
+  read -r username
+  read -r filename
+ } <<< "$( source_file "$file" )"
+ for i in ${list[@]}; do check_error ${!i}; done
+ echo $filename
+}
+
+# ===================================================================================
+
+## Define functions
+
+# Check given password file is a file
+get_file() {
+  local file=${1}
+  if [ -f "$file" ]; then
+    echo $file
+  else
+    echo "ERROR: $file does not exist"
+    exit 1
+  fi
+}
+
+# Read password from password file
+source_file() {
+  local configfile="${1}"
+  local configfile_secured='tmp.cfg'
+  local micro path imp_path archive pass_file enviro server port username
+
+  # check if the file contains something we don't want
+  if egrep -q -v '^#|^[^ ]*=[^;]*' "$configfile"; then
+    echo "Config file is unclean, cleaning it..." >&2
+    # filter the original to a new file
+    egrep '^#|^[^ ]*=[^;&]*'  "$configfile" > "$configfile_secured"
+    configfile="$configfile_secured"
+  fi
+
+  # now source it, either the original or the filtered variant
+  source "$configfile"
+
+  # Check if parameters are empty
+  for i in ${list[@]}; do
+    if [[ "${!i:-nope}" == "nope" ]]; then
+     echo "ERROR: $i undefined in the config file"
+    fi
+      echo ${!i}
+  done
+  echo "$configfile"
+}
+
+# Check for errors - all error messages start with ERROR:
+# If doing multiple levels of functions, send to error file and then parse file at end
+check_error() {
+  local msg="$*"
+  # regex matching at beginning of a string. If removing ERROR from the beginning
+  # causes msg varibale to change then return as error
+  if [ "${msg//ERROR/}" != "${msg}" ]; then
+    echo "${msg}"
+    exit 1
+  fi
+}
