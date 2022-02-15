@@ -19,21 +19,25 @@ function read_config::run () {
    echo "ERROR: read_config - no file given with --file. Have you use the correct format? e.g. --file=file.name"
    exit 1
  fi
- 
+
  ## Define variables
- 
+
  local file=$(get_file "$file_path")
  check_error $file
-
- local server port username
+ declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "username")
+ for i in ${list[@]}; do local $i; done
  {
+  read -r micro
+  read -r path
+  read -r imp_path
+  read -r archive
+  read -r pass_file
+  read -r enviro
   read -r server
   read -r port
   read -r username
  } <<< "$( source_file "$file" )"
- echo "$server"
- echo "$port"
- echo "$username"
+ for i in ${list[@]}; do echo "${!i}"; done
 }
 
 # ===================================================================================
@@ -55,7 +59,7 @@ get_file() {
 source_file() {
   local configfile="${1}"
   local configfile_secured='tmp.cfg'
-  local server port username
+  local micro path imp_path archive pass_file enviro server port username
 
   # check if the file contains something we don't want
   if egrep -q -v '^#|^[^ ]*=[^;]*' "$configfile"; then
@@ -69,18 +73,12 @@ source_file() {
   source "$configfile"
 
   # Check if parameters are empty
-  if [[ "${server:-nope}" == "nope" ]]; then
-   server="ERROR: server undefined in the config file"
-  fi
-  if [[ "${port:-nope}" == "nope" ]]; then 
-   port="ERROR: port undefined in the config file"
-  fi
-  if [[ "${username:-nope}" == "nope" ]]; then
-   username="ERROR: username undefined in the config file"
-  fi
-    echo ${server}
-    echo ${port}
-    echo ${username}
+  for i in ${list[@]}; do
+    if [[ "${!i:-nope}" == "nope" ]]; then
+     $i="ERROR: $i undefined in the config file"
+    fi
+      echo ${!i}
+  done
 }
 
 # Check for errors - all error messages start with ERROR:
