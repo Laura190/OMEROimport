@@ -76,7 +76,7 @@ function import_folder::run() {
  local password=$(read_pass "$pass_file")
  check_error $password
 
- local result=$(import "$password" "$enviro" "$user" "$data_folder" "$server" "$port" "$username")
+ local result=$(import "$password" "$enviro" "$user" "$data_folder" "$server" "$port" "$importer")
  check_error $result
  # Print message if successful
  echo "$result"

@@ -23,7 +23,7 @@ function check_config::run () {
  
  local file=$(get_file "$file_path")
  check_error $file
- declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "username")
+ declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "importer")
  for i in ${list[@]}; do local $i; done
  {
   read -r micro
@@ -34,7 +34,7 @@ function check_config::run () {
   read -r enviro
   read -r server
   read -r port
-  read -r username
+  read -r importer
   read -r filename
  } <<< "$( source_file "$file" )"
  for i in ${list[@]}; do check_error ${!i}; done
@@ -60,7 +60,7 @@ get_file() {
 source_file() {
   local configfile="${1}"
   local configfile_secured='tmp.cfg'
-  local micro path imp_path archive pass_file enviro server port username
+  local micro path imp_path archive pass_file enviro server port importer
 
   # check if the file contains something we don't want
   if egrep -q -v '^#|^[^ ]*=[^;]*' "$configfile"; then
