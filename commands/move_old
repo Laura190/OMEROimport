@@ -76,7 +76,7 @@ list_old_data() {
 
 # Move old data to OldData folder
 move_old_data() {
-  local path=${1}
+  local path="$(dirname ${1})"
   word="/OldData"
   if [ -s "OldData.list" ]; then
     while read filename; do
