@@ -47,6 +47,7 @@ function move_imports::run () {
  
  local summary=$(get_summary "$img_log")
  check_error $summary
+ echo "$summary"
 
  local images=$(get_imported_images "$img_log")
  check_error $images
