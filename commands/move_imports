@@ -155,7 +155,7 @@ move_imports() {
     if [ $? -ne 0 ]; then
       echo "ERROR: unable to create folder for $newFilename"
     fi
-    mv "$filename" "$newFilename"
+    rsync -a --remove-source-files "$filename" "$newFilename"
     ec=$?
     if [ $ec -ne 0 ]; then
       echo "ERROR: errorcode: $ec, unable to move $filename"
