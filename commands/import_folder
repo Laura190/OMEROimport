@@ -149,7 +149,6 @@ import() {
     done
     logname=$logname-$i
 fi
-touch -- "$logname".log
   #Increase Java Heap size for imports
   export JAVA_OPTS=-Xmx4G
   #Check if there are any files to import
