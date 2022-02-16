@@ -86,7 +86,7 @@ move_old_data() {
         echo "ERROR: unable to create OldData folder"
         exit 1
       fi
-      mv "$filename" "$newFilename"
+      rsync -a --remove-source-files "$filename" "$newFilename"
       if [ $? -ne 0 ]; then
         echo "ERROR: unable to move $filename to $newFilename"
         exit 1
