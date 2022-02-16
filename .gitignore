@@ -1,9 +1,7 @@
 .pass.txt
-OldData.list
+*.list
 TestImport.sh
 subfunctiontest.sh
 tmp.cfg
 import.cfg
 *.log
-allImportedFiles.list
-importedFiles.list
