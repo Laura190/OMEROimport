@@ -57,10 +57,6 @@ function move_imports::run () {
  local result=$(move_imports "$target")
  check_error $result
  
- #Print warnings
- local errors=$(check_omero_errors "$summary" "$user")
- echo $errors
- 
  # Print message if successful
  echo "=== Successfully moved imported files"
 }
@@ -185,12 +181,6 @@ check_file() {
     echo "ERROR: "$file" file does not exist"
     exit 1
   fi
-}
-
-check_omero_errors() {
-  local errors=$(echo "${1}" | cut -d ' ' -f 10)
-  local user=${2}
-  echo "Warning: OMERO reported $errors errors occured when importing files for $user"
 }
 
 # Check for errors - all error messages start with ERROR:
