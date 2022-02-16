@@ -5,3 +5,5 @@ subfunctiontest.sh
 tmp.cfg
 import.cfg
 *.log
+allImportedFiles.list
+importedFiles.list
