@@ -20,7 +20,6 @@ function check_config::run () {
  fi
 
  ## Define variables
- 
  local file=$(get_file "$file_path")
  check_error $file
  declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "importer")
@@ -56,11 +55,11 @@ get_file() {
   fi
 }
 
-# Read password from password file
 source_file() {
   local configfile="${1}"
   local configfile_secured='tmp.cfg'
-  local micro path imp_path archive pass_file enviro server port importer
+  declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "importer")
+  for i in ${list[@]}; do local $i; done
 
   # check if the file contains something we don't want
   if egrep -q -v '^#|^[^ ]*=[^;]*' "$configfile"; then
@@ -69,7 +68,6 @@ source_file() {
     egrep '^#|^[^ ]*=[^;&]*'  "$configfile" > "$configfile_secured"
     configfile="$configfile_secured"
   fi
-
   # now source it, either the original or the filtered variant
   source "$configfile"
 
