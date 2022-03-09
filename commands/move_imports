@@ -115,14 +115,13 @@ get_summary() {
 get_imported_images() {
   local log_file=${1}
   # List of imported image files
-  images=$(grep -o 'IMPORT_DONE Imported file:.*' $log_file | cut -f 4- -d ' ')
-  echo $images
+  grep -o 'IMPORT_DONE Imported file:.*' $log_file | cut -f 4- -d ' ' > importedImages.list
+  echo importedImages.list
 }
 
 # Get files associated to imported image files and save to temp file
 get_imported_files(){
   local grp_file=${1}
-  local images=${3}
   # If it exists remove importsFiles so do not append to already existing file
   rm -f importedFiles.list 2> /tmp/om_imp
   rm -f allImportedFiles.list 2> /tmp/om_imp
@@ -130,13 +129,14 @@ get_imported_files(){
   local end=$(grep "#===" $grp_file | head -1)
   local start
   local escaped_start
-  for img in $images; do
+  cat ${3} | while read img; do
     start=$(grep "# Group: $img" $grp_file | head -1)
     escaped_start=$(printf '%s\n' "$start" | sed -e 's/[\/&]/\\&/g')
 	#Read all the lines between, and including, escaped_start and end; then delete first and last lines
     sed -n "/${escaped_start}/,/${end}/ p" $grp_file | sed '1d' | sed '$d' >> allImportedFiles.list
   done
   sort allImportedFiles.list | uniq > importedFiles.list
+  cat importedFiles.list
 }
 
 # Move imports data to imported folder
