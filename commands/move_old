@@ -86,7 +86,7 @@ move_old_data() {
         echo "ERROR: unable to create OldData folder"
         exit 1
       fi
-      mv "$filename" "$newFilename"
+      rsync -a --remove-source-files "$filename" "$newFilename"
       if [ $? -ne 0 ]; then
         echo "ERROR: unable to move $filename to $newFilename"
         exit 1
@@ -116,7 +116,7 @@ move_DV_olddata() {
     # Send command to remote microscope computer to move files
     # Need to point to specific ssh key to prevent request for password
     printf -v makeStr 'mkdir --parents %q' "$(dirname "$newFilename")"
-    printf -v moveStr1 'mv %q %q/' "$oldFilename" "$(dirname "$newFilename")"
+    printf -v moveStr1 'rsync -a --remove-source-files %q %q/' "$oldFilename" "$(dirname "$newFilename")"
     # -n needed to prevent ssh breaking while loop
     ssh -n camdu@$IP -i $ssh_key $makeStr
     if [ $? -ne 0 ]; then

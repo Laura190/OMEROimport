@@ -1,5 +1,5 @@
 .pass.txt
-OldData.list
+*.list
 TestImport.sh
 subfunctiontest.sh
 tmp.cfg
