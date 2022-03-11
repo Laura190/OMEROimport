@@ -15,36 +15,32 @@ EOT
 
 function import_folder::usage() {
   cat <<EOT
-  -p --password_file   mandatory   Full path to file containing 
-                                   password for importer OMERO account
-  -e --environment     mandatory   Full path to OMERO virtual environment
-  -u --user            mandatory   OMERO (LDAP) user ID, where data will be 
-                                   imported to
+  -c --config          mandatory   config file containing server info and importer details
   -f --folder          mandatory   Folder of data to be imported
-  -c --config          mandatory   config file containing server info
+  -u --user            mandatory   OMERO (LDAP) user ID, who data will be 
+                                   imported for
+  -p --password_file   optional    Full path to file containing password for importer OMERO account 
+                                   (overwrites value from configuration file)
+  -e --environment     optional    Full path to OMERO virtual environment 
+                                   (overwrites value from configuration file)
+  -i --importer	optional    Username for importing user 
+                                   (overwrites value from configuration file)
 EOT
 }
 
 function import_folder::run() {
- # Check if password file is given
- local pass=$(readopt -p --password_file)
- if [ -z "${pass}" ]; then
-   echo "ERROR: import_folder - no password file given with --password_file"
+ # Check if config file is given
+ local conf=$(readopt -c --config)
+ if [ -z "${conf}" ]; then
+   echo "ERROR: import_folder - no config file given with --config"
    exit 1
  fi
  
-  # Check if environment path is given
- local env_dir=$(readopt -e --environment)
- if [ -z "${env_dir}" ]; then
-   echo "ERROR: import_folder - no environment path given with --environment"
-   exit 1
- fi
- 
-  # Check if user is given
+ # Check if user is given
  local user=$(readopt -u --user)
  if [ -z "${user}" ]; then
-   echo "ERROR: import_folder - no user ID given with --user"
-   exit 1
+  echo "ERROR: import_folder - no user given with --user"
+  exit 1
  fi
  
   # Check if folder to be imported is given
@@ -54,33 +50,25 @@ function import_folder::run() {
    exit 1
  fi
  
- # Check if config file is given
- local conf=$(readopt -c --config)
- if [ -z "${conf}" ]; then
-   echo "ERROR: import_folder - no config file given with --config"
-   exit 1
- fi
- 
  ## Define variables
  
- local config_file=$(get_config_file "$conf")
+ local config_file=$( bash OMEROimport check_config )
  check_error $config_file
+ source $config_file
  
- local server port importer
- { 
-   read -r server
-   read -r port
-   read -r importer
- } <<< $(get_config "$config_file")
- check_error $server
- check_error $port
- check_error $importer
- 
- local pass_file=$(get_pass_file "$pass")
+ # Check if password file is given
+ local pass=$(readopt -p --password_file)
+ if [ ! -z "${pass}" ]; then
+   local pass_file=$(get_pass_file "$pass")
+ fi
  check_error $pass_file
  
- local env=$(get_environment "$env_dir")
- check_error $env
+ # Check if environment path is given
+ local env_dir=$(readopt -e --environment)
+ if [ ! -z "${env_dir}" ]; then
+   local enviro=$(get_environment "$env_dir")
+ fi
+ check_error $enviro
  
  local data_folder=$(get_folder "$folder")
  check_error $data_folder
@@ -88,7 +76,7 @@ function import_folder::run() {
  local password=$(read_pass "$pass_file")
  check_error $password
 
- local result=$(import "$password" "$env" "$user" "$data_folder" "$server" "$port" "$importer")
+ local result=$(import "$password" "$enviro" "$user" "$data_folder" "$server" "$port" "$importer")
  check_error $result
  # Print message if successful
  echo "$result"
@@ -97,34 +85,6 @@ function import_folder::run() {
 # ===================================================================================
 
 ## Define functions
-
-get_config_file() {
-  local configuration=${1}
-  if [ -f "$configuration" ]; then
-    echo $configuration
-  else
-    echo "ERROR: $configuration does not exist"
-    exit 1
-  fi
-}
-
-get_config() {
-  local cfgfile=${1}
-  if [ -f "${cfgfile}" ]; then
-    local server port importer
-    { 
-      read -r server
-      read -r port
-      read -r importer
-    } <<< "$( bash OMEROimport read_config --file="$cfgfile")"
-    echo $server
-    echo $port
-    echo $importer
-  else
-    echo "ERROR: $cfgfile does not exist"
-	exit 1
-  fi
-}
 
 # Check given password file is a file
 get_pass_file() {

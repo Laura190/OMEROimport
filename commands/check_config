@@ -2,29 +2,28 @@
 
 ## Define read_file command
 
-function read_config::description(){
-  echo "Reads parameters from config file"
+function check_config::description(){
+  echo "Check config file to remove extraneous statements and identify any missing values. Returns name of cleaned config file"
 }
 
-function read_config::usage() {
+function check_config::usage() {
   cat <<EOT
-  -f --file   mandatory   path to config file
+  -f --file   optional   path to config file
 EOT
 }
 
-function read_config::run () {
- # Check if file is given
+function check_config::run () {
+ # Check if file is given else use default
  local file_path=$(readopt -f --file)
  if [ -z "${file_path}" ]; then
-   echo "ERROR: read_config - no file given with --file. Have you use the correct format? e.g. --file=file.name"
-   exit 1
+   local file_path="import.cfg"
  fi
 
  ## Define variables
-
+ 
  local file=$(get_file "$file_path")
  check_error $file
- declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "username")
+ declare -a list=("micro" "path" "imp_path" "archive" "pass_file" "enviro" "server" "port" "importer")
  for i in ${list[@]}; do local $i; done
  {
   read -r micro
@@ -35,9 +34,11 @@ function read_config::run () {
   read -r enviro
   read -r server
   read -r port
-  read -r username
+  read -r importer
+  read -r filename
  } <<< "$( source_file "$file" )"
- for i in ${list[@]}; do echo "${!i}"; done
+ for i in ${list[@]}; do check_error ${!i}; done
+ echo $filename
 }
 
 # ===================================================================================
@@ -59,7 +60,7 @@ get_file() {
 source_file() {
   local configfile="${1}"
   local configfile_secured='tmp.cfg'
-  local micro path imp_path archive pass_file enviro server port username
+  local micro path imp_path archive pass_file enviro server port importer
 
   # check if the file contains something we don't want
   if egrep -q -v '^#|^[^ ]*=[^;]*' "$configfile"; then
@@ -75,10 +76,11 @@ source_file() {
   # Check if parameters are empty
   for i in ${list[@]}; do
     if [[ "${!i:-nope}" == "nope" ]]; then
-     $i="ERROR: $i undefined in the config file"
+     echo "ERROR: $i undefined in the config file"
     fi
       echo ${!i}
   done
+  echo "$configfile"
 }
 
 # Check for errors - all error messages start with ERROR:
