@@ -7,6 +7,8 @@ Contact: CAMDU@warwick.ac.uk
 A series of commands that can be combined to set up automatic imports from microscopes. The commands are designed to output concise messages so it is easy to quickly spot issues. Verbose output is passed to a log file that can be accessed when more details are required.
 Data older than 31 days is moved to a folder called OldData. This makes it easy to monitor data/files that have been on the microscope computer for a long time to prevent the hard drive becoming full. Data that is imported to OMERO is moved to an Imported folder so that users can check their data has been correctly stored in OMERO before deleting it from the microscope computer.
 
+You can see a short video describing the import made for OME 2021 here: https://www.youtube.com/watch?v=nz-WOUj8tc4
+
 ## OMERO requirements
 - A user with sudo and create users privileges to act as the importer
 - LDAP authentication enabled
@@ -33,9 +35,25 @@ Data older than 31 days is moved to a folder called OldData. This makes it easy 
 5. Clone the repo
 6. Create a configuration file that contains:
     ```
-    server=server.name
-    port=xxxx
-    username=importer_name
+    ## Microscope
+    # Name of microscope
+    micro=microscope
+    # Location where data is stored
+    path=/home/data
+    # Location of Imported folder
+    imp_path=$path/Imported
+    # Location where log files will be stored
+    archive=$path/ImportLogs
+    # Location of encrypted password file
+    pass_file=/home/user/.pass.txt
+    # Path to OMERO environment
+    enviro=/home/user/omero-env
+    ## Server
+    # OMERO server details
+    server=my.omero.server
+    port=4064
+    # Imported user
+    importer=importer
     ```
    See Example/import.cfg for an example configuration file.
 7. Create a password file containing the password for your importer
