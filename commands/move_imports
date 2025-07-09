@@ -133,9 +133,9 @@ get_imported_files(){
     start=$(grep "# Group: $img" $grp_file | head -1)
     escaped_start=$(printf '%s\n' "$start" | sed -e 's/[\/&]/\\&/g')
 	#Read all the lines between, and including, escaped_start and end; then delete first and last lines
-    sed -n "/${escaped_start}/,/${end}/ p" $grp_file | sed '1d' | sed '$d' >> allImportedFiles.list
+    sed -n "/${escaped_start}/,/${end}/ p" $grp_file | sed '1d' >> allImportedFiles.list
   done
-  sort allImportedFiles.list | uniq > importedFiles.list
+  sort allImportedFiles.list | uniq | grep -v '^#==='> importedFiles.list
   cat importedFiles.list
 }
 
